@@ -1,6 +1,8 @@
 import fs from 'fs';
 import net from 'net';
 import sudo from 'sudo-prompt';
+import os from 'os';
+import path from 'path';
 // import { exec } from 'child_process';
 
 export const ETC_HOST_FILE =
@@ -58,12 +60,15 @@ export function saveEtcHost(
 
   linesArr.splice(index, 1, `${!disabled ? '' : '#'}${ip} ${host}`);
 
-  fs.writeFileSync('/tmp/hostEtchScratch', linesArr.join('\n'));
+  const scratchFile = path.join(os.tmpdir(), 'hostEtchScratch');
+
+  fs.writeFileSync(scratchFile, linesArr.join('\n'));
 
   const options = {
     name: 'HostEtch'
   };
-  sudo.exec(`cp /tmp/hostEtchScratch ${ETC_HOST_FILE}`, options, error => {
+
+  sudo.exec(`cp ${scratchFile} ${ETC_HOST_FILE}`, options, error => {
     if (error) {
       failedToSaveCb(lineData);
       throw error;
