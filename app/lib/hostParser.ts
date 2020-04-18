@@ -1,9 +1,18 @@
 import fs from 'fs';
 import net from 'net';
 import sudo from 'sudo-prompt';
-import { exec } from 'child_process';
+// import { exec } from 'child_process';
 
 export const ETC_HOST_FILE = '/opt/priv_host/hosts';
+
+export type Exploded =
+  | { ip: string; disabled: boolean; host: string; index: number }
+  | {
+      ip?: undefined;
+      disabled?: undefined;
+      host?: undefined;
+      index?: undefined;
+    };
 
 export default function parseEtcHost() {
   const lines = fs.readFileSync(ETC_HOST_FILE, 'utf-8');
@@ -18,9 +27,9 @@ export default function parseEtcHost() {
       } else if (net.isIPv4(ip)) {
         return { ip, disabled: false, host, index };
       }
-      return null;
+      return {};
     })
-    .filter(v => v);
+    .filter(v => Object.entries(v).length > 0);
 
   return exploded;
 }
@@ -32,19 +41,29 @@ export function watchFileChanges(cb: {
   fs.watchFile(ETC_HOST_FILE, cb);
 }
 
-export function saveEtcHost(lineData) {
+export function saveEtcHost(
+  lineData: Exploded,
+  failedToSaveCb: { (): void; (): void }
+) {
   const lines = fs.readFileSync(ETC_HOST_FILE, 'utf-8');
   const linesArr = lines.split('\n');
   const { ip, host, index, disabled } = lineData;
+
+  if (typeof index === 'undefined') {
+    throw new Error('undefined index');
+  }
+
   linesArr.splice(index, 1, `${disabled ? '' : '#'}${ip} ${host}`);
 
   fs.writeFileSync('/tmp/hostEtchScratch', linesArr.join('\n'));
 
   const options = {
-    name: 'Electron',
-    icns: '/home/eugene/other_codes/hostetch/resources/icon.icns'
+    name: 'HostEtch'
   };
   sudo.exec(`cp /tmp/hostEtchScratch ${ETC_HOST_FILE}`, options, error => {
-    if (error) throw error;
+    if (error) {
+      failedToSaveCb(lineData);
+      throw error;
+    }
   });
 }

@@ -1,33 +1,45 @@
 import React, { useState } from 'react';
-import parseEtcHost, { watchFileChanges, saveEtcHost } from '../lib/hostParser';
+import parseEtcHost, {
+  watchFileChanges,
+  saveEtcHost,
+  Exploded
+} from '../lib/hostParser';
 
-watchFileChanges((curr, prev) => {
-  const host = parseEtcHost();
-  console.log(host);
-  // setHost(host);
+watchFileChanges(() => {
+  // TODO: implement file save changes
 });
 
 export default function Index() {
   const [hosts, setHost] = useState(parseEtcHost());
 
-  function handleIndividual(index, value, type) {
+  function handleInputRowChange(
+    index: number,
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
+    const { target } = event;
     const current = hosts[index];
     let inputChange = {};
-    switch (type) {
+    switch (target.name) {
       case 'ip':
-        inputChange = { ip: value };
+        inputChange = { ip: target.value };
         break;
       case 'host':
-        inputChange = { host: value };
+        inputChange = { host: target.value };
         break;
       case 'disabled':
-        inputChange = { disabled: value };
+        inputChange = { disabled: !target.checked };
         break;
       default:
         break;
     }
     hosts.splice(index, 1, { ...current, ...inputChange });
     setHost([...hosts]);
+  }
+
+  function saveChanges(current: Exploded) {
+    saveEtcHost(current, () => {
+      setHost(parseEtcHost());
+    });
   }
 
   return (
@@ -47,9 +59,10 @@ export default function Index() {
               <td className="border px-2 py-1">
                 <input
                   type="checkbox"
-                  defaultChecked={!h?.disabled}
+                  name="disabled"
+                  checked={!h?.disabled}
                   onChange={e => {
-                    handleIndividual(i, e.target.checked, 'disabled');
+                    handleInputRowChange(i, e);
                   }}
                 />
               </td>
@@ -58,9 +71,10 @@ export default function Index() {
                   className="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500 text-sm"
                   id="inline-full-name"
                   type="text"
+                  name="ip"
                   value={h?.ip}
                   onChange={e => {
-                    handleIndividual(i, e.target.value, 'ip');
+                    handleInputRowChange(i, e);
                   }}
                 />
               </td>
@@ -69,9 +83,10 @@ export default function Index() {
                   className="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-1 px-2 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-purple-500 text-sm"
                   id="inline-full-name"
                   type="text"
+                  name="host"
                   value={h?.host}
                   onChange={e => {
-                    handleIndividual(i, e.target.value, 'host');
+                    handleInputRowChange(i, e);
                   }}
                 />
               </td>
@@ -81,7 +96,7 @@ export default function Index() {
                   type="button"
                   onClick={() => {
                     const current = hosts[i];
-                    saveEtcHost(current);
+                    saveChanges(current);
                   }}
                 >
                   Save
@@ -91,6 +106,7 @@ export default function Index() {
           ))}
         </tbody>
       </table>
+      <div className="mb-20" />
     </div>
   );
 }
