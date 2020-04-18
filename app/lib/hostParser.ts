@@ -3,7 +3,10 @@ import net from 'net';
 import sudo from 'sudo-prompt';
 // import { exec } from 'child_process';
 
-export const ETC_HOST_FILE = '/opt/priv_host/hosts';
+export const ETC_HOST_FILE =
+  process.env.NODE_ENV === 'development'
+    ? '/opt/priv_host/hosts'
+    : '/etc/hosts';
 
 export type Exploded =
   | { ip: string; disabled: boolean; host: string; index: number }
@@ -53,7 +56,7 @@ export function saveEtcHost(
     throw new Error('undefined index');
   }
 
-  linesArr.splice(index, 1, `${disabled ? '' : '#'}${ip} ${host}`);
+  linesArr.splice(index, 1, `${!disabled ? '' : '#'}${ip} ${host}`);
 
   fs.writeFileSync('/tmp/hostEtchScratch', linesArr.join('\n'));
 

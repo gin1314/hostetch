@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent } from 'react';
 import parseEtcHost, {
   watchFileChanges,
   saveEtcHost,
@@ -14,7 +14,7 @@ export default function Index() {
 
   function handleInputRowChange(
     index: number,
-    event: React.ChangeEvent<HTMLInputElement>
+    event: ChangeEvent<HTMLInputElement>
   ) {
     const { target } = event;
     const current = hosts[index];
