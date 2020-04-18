@@ -1,18 +1,12 @@
 import fs from 'fs';
-import path from 'path';
 import net from 'net';
+import sudo from 'sudo-prompt';
+import { exec } from 'child_process';
 
+export const ETC_HOST_FILE = '/opt/priv_host/hosts';
 
-type Exploded = ({
-  ip: string;
-  disabled: boolean;
-  host: string;
-  index: number;
-} | null)[];
-
-export default function parse(filePath: string): Exploded {
-  const etcHostFile = path.join(__dirname, '../etchosts');
-  const lines = fs.readFileSync(etcHostFile, 'utf-8');
+export default function parseEtcHost() {
+  const lines = fs.readFileSync(ETC_HOST_FILE, 'utf-8');
   const linesArr = lines.split('\n');
   const exploded = linesArr
     .map((v, index) => {
@@ -35,16 +29,22 @@ export function watchFileChanges(cb: {
   (curr: unknown, prev: unknown): void;
   (curr: fs.Stats, prev: fs.Stats): void;
 }) {
-  const etcHostFile = path.join(__dirname, '../etchosts');
-  fs.watchFile(etcHostFile, cb);
+  fs.watchFile(ETC_HOST_FILE, cb);
 }
 
-export function saveEtcHost(lineData: Exploded) {
-  const etcHostFile = path.join(__dirname, '../etchosts');
-  const lines = fs.readFileSync(etcHostFile, 'utf-8');
+export function saveEtcHost(lineData) {
+  const lines = fs.readFileSync(ETC_HOST_FILE, 'utf-8');
   const linesArr = lines.split('\n');
   const { ip, host, index, disabled } = lineData;
   linesArr.splice(index, 1, `${disabled ? '' : '#'}${ip} ${host}`);
-  console.log(linesArr);
-  fs.writeFileSync(etcHostFile, linesArr.join('\n'));
+
+  fs.writeFileSync('/tmp/hostEtchScratch', linesArr.join('\n'));
+
+  const options = {
+    name: 'Electron',
+    icns: '/home/eugene/other_codes/hostetch/resources/icon.icns'
+  };
+  sudo.exec(`cp /tmp/hostEtchScratch ${ETC_HOST_FILE}`, options, error => {
+    if (error) throw error;
+  });
 }

@@ -1,4 +1,4 @@
 const routes = {
-  HOSTEDITOR: '/hosteditor'
+  INDEX: '/'
 };
 export default routes;
